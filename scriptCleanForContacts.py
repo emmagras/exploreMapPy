@@ -60,53 +60,100 @@ def process_data():
         agencyList = list( data.values()[4] ) 
         # print "\nagencyList", len(agencyList) #len284 without set. len51 set.
         
-    # Create dict from abbsList where item becomes key, separate empty dicts become values. I used a dictionary comprehension instead of .dict()
+    # Goal 1 Completed: create dict from abbsList where item becomes key, separate empty dicts become values. I used a dictionary comprehension instead of .dict()
         # abbsDict = {k: {} for k in abbsList[0:51]}  # Goal 1 completed. 51 empty dicts being created by this line
         # print "\nabbsDict",abbsDict
-    # Goal 2: insert agency header and agency values into the 51 empty dicts
-        # problem with the loop below is agency doesn't match with main key. Fixed beneath this while loop by zipping the abb and agency lists together, then removing dups
-        # idx = 0
-        # for state in abbsDict: # this gives keys
-        #     abbsDict[state] = {'agency': agencyList[idx]}
-        #     idx += 1
-        # print "\nabbsDict", abbsDict
-              
+    
+    # Goal 2 Completed: insert agency header and agency values into the 51 empty dicts
     # Outside while loop - zipping and then setting of lists made inside while loop, creating dicts
-    # in first attempt loop above to create a dict, the agency was mismatched to main state abb key.  
     abAg = zip(data.values()[0], data.values()[4]) # this zip associates abb col with agency col; creates proper pairing
     # print "abAg", len(abAg)  #len 284
     abAgSets = set(abAg) # removed dups
     # print "abAgSets", len(abAgSets) #len 51   
     
-    # Below is loop that creates dict with agency matched to main state abb key. possibly later, I'll add contactslist into this dictionary block
+    # Below is loop that creates dict with agency matched to main state abb key. I'll add contacts list into this dictionary block
     stateDict = {}
     for abAgPair in abAgSets: # like saying, to create a key val pair from the zipped and set list of abbs and agencies...
         stateDict[abAgPair[0]] = {"agency": abAgPair[1]} # position 0 of this zipped list is abb, position 1 is agency. I removed "contactsList": contactsList
-    # print "\nstateDict",stateDict      
+    print "\nstateDict",stateDict      
         
-    fLtpeList = zip(data.values()[5], data.values()[2], data.values()[6], data.values()[7]) # skips the 5 empty string states
-    # print "fLtpeList", len(fLtpeList) #len284
-    agList = (data.values()[4])
-    # print "agList", agList #len284. 
-    agFltpeList = zip(agList, fLtpeList) # this zip associates ag with 4 cols that will be the vals in the sub dicts, firstLastDict. List of tuples.
-    # print "agFltpeList", agFltpeList # len 284, was 274 before I replaced .strip with .title in line 40
-    agFltpeSets = set(agFltpeList) # removed dups but screwed up the order!!
+    agfLtpeList = zip(data.values()[4], data.values()[5], data.values()[2], data.values()[6], data.values()[7]) # skips the 5 empty string states
+    # print "agfLtpeList", agfLtpeList #len284
+    agFltpeSets = set(agfLtpeList) # removed dups
     # print "agFltpeSets", agFltpeSets # len 142, was 137 before I replaced .strip with .title in line 40. 
     
     # Below is the loop that creates firstLastDicts that will be wrapped by contactsList
     firstLastDict = {} 
-    for agFltpeGroup in agFltpeSets: # like saying, to create a key val pair from the zipped and set list of ag and 4 cols...
-        firstLastDict[agFltpeGroup[0]] = {"firstLast": agFltpeGroup[1]} #"title": agFltpeGroup[2], "phone": agFltpeGroup[3], "email": agFltpeGroup[4]}
+    for agFltpeGroup in agfLtpeList: # like saying, to create a key val pair from the zipped and set list of ag and 4 cols.
+        firstLastDict[agFltpeGroup[0]] = {"firstLast": agFltpeGroup[1], "title": agFltpeGroup[2], "phone": agFltpeGroup[3], "email": agFltpeGroup[4]}
     print "\nfirstLastDict", firstLastDict
-    # print "\nfirstLastDict.values()", firstLastDict.values() #len137
-    # contactsList = firstLastDict.values() # maybe don't rename the list
-    # print "contactsList", len(contactsList) #len137
+    
+    # sonia recd using .setdefault method
+    wAgDict = {}
+    for names in firstLastDict.keys():#like saying, for the keys AgencyName
+        for values in firstLastDict[names]:#like saying, for the vals 501-569-2337,Quality Assurance...,Kevin.Palmer@ahtd.ar.gov,Kevin Palmer, 
+            wAgDict.setdefault(values, []).append(firstLastDict[names][values])## the vals of this new dict will be put into a list. append these names and these values as defined in line above.
+    print"\nwAgDict",wAgDict
 
-        # for contact in agencyList:
+    # if .setdefault doesn't work, try defaultdict, or collections.defaultdict, or dict.items()
+    
+    # or this:
+        # data = [('a', 1), ('b', 1), ('b', 2)]
+
+        # d1 = {}
+        # d2 = {}
+
+        # for key, val in data:
+        #     # variant 1)
+        #     d1[key] = d1.get(key, []) + [val]
+        #     # variant 2)
+        #     d2.setdefault(key, []).append(val)
+
+
+    # you can't put all the states values into contacts list until there is a tie between the contact and the appropriate state.
+    # print "\nfirstLastDict.values()", firstLastDict.values() #len137
+    # contacts = firstLastDict.values() # maybe don't rename the list
+    # print "\ncontacts", contacts #len137
+
+
+    #on april 7, see if you can use dict comprehension nesting of curly brackets and square brackets as illustrated below
+
+#     abbsDict = {k: {k: v for v in agencyList[0:51]} for k in abbsList[0:51]}
+# +        print "\nabbsDict", abbsDict
+
+    # for contact in agencyList:
     #     = firstLastDict.values()
+
+    # dict.update(dict2)
+    # stateDict.update(firstLastDict)
+    # print "Value : %s" %  stateDict
     
     data = stateDict
     return data
+
+
+    # Could this help?
+    # https://github.com/apillalamarri/python_exercises/blob/master/lesson03_csv_to_dict.py
+    # Note that I 'faked' the order of my dictionary by using the row numbers as my keys.
+
+    # dict = {}
+    # for index, line in enumerate(lines):
+    #     single_line_dict = {}
+    #     #print zip(headers, line)
+    #     for header, element in zip(headers, line):
+    #         #print "header is {0} and element is {1}".format(header, element)
+    #         single_line_dict[header] = element
+    #         #print single_line_dict
+    #     dict[index] = single_line_dict
+    # return dict
+
+    # Or this?
+    # https://docs.python.org/2/library/functions.html#next
+    # http://www.tutorialspoint.com/python/file_next.htm
+    # for index in range(5):
+    #     line = fo.next()
+    # print "Line No %d - %s" % (index, line)
+
             
     # {x: x**2 for x in (2, 4, 6)} # This line and what it returns on next line is food for thought
     # {2: 4, 4: 16, 6: 36}
